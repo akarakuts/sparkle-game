@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://drawing_minigame"]
+
+[ext_resource type="Script" path="res://scenes/minigames/Drawing.gd" id="1_xt5tp"]
+
+[node name="Drawing" type="Control"]
+anchors_preset = 0
+size = Vector2i(1080, 1920)
+script = ExtResource("1_xt5tp")

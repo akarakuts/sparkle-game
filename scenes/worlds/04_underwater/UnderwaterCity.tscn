@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/worlds/04_underwater/UnderwaterCity.gd" id="1_under"]
+
+[node name="UnderwaterCity" type="Node2D"]
+script = ExtResource("1_under")

@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/worlds/07_dreamlands/Dreamlands.gd" id="1_dream"]
+
+[node name="Dreamlands" type="Node2D"]
+script = ExtResource("1_dream")

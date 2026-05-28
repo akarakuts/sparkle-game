@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/worlds/02_ice_peaks/IcePeaks.gd" id="1_ice"]
+
+[node name="IcePeaks" type="Node2D"]
+script = ExtResource("1_ice")

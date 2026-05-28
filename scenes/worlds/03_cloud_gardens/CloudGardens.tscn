@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/worlds/03_cloud_gardens/CloudGardens.gd" id="1_cloud"]
+
+[node name="CloudGardens" type="Node2D"]
+script = ExtResource("1_cloud")

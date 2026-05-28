@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/worlds/05_echo_desert/EchoDesert.gd" id="1_desert"]
+
+[node name="EchoDesert" type="Node2D"]
+script = ExtResource("1_desert")

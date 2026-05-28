@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/worlds/01_glow_forest/GlowForest.gd" id="1_glow"]
+
+[node name="GlowForest" type="Node2D"]
+script = ExtResource("1_glow")

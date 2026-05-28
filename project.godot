@@ -1,0 +1,43 @@
+; Engine configuration file.
+; Godot 4.6.3.stable
+
+[application]
+config/name="Искорка и Кристалл Дружбы"
+config/name_localized="Sparkle and the Crystal of Friendship"
+run/main_scene="res://scenes/main/MainMenu.tscn"
+config/icon="res://assets/graphics/ui/app_icon.png"
+
+[display]
+window/size/viewport_width=1080
+window/size/viewport_height=1920
+window/size/mode=2
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/dpi/allow_hidpi=true
+window/size/always_on_top=false
+window/size/borderless=true
+window/handheld/orientation=1
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
+
+[autoload]
+GameState="*res://scripts/global/GameState.gd"
+MiniGameManager="*res://scripts/global/MiniGameManager.gd"
+SaveManager="*res://scripts/global/SaveManager.gd"
+AudioManager="*res://scripts/global/AudioManager.gd"
+SceneManager="*res://scripts/global/SceneManager.gd"
+DisplayHelper="*res://scripts/global/DisplayHelper.gd"
+JuiceManager="*res://scripts/global/JuiceManager.gd"
+WorldStory="*res://scripts/global/WorldStory.gd"
+
+[input]
+tap={
+"deadzone": 0.5,
+"events": [Object(InputEventScreenTouch,"resource_local_to_scene":false,"resource_name":"","device":-1,"position":Vector2(0,0),"pressed":true,"canceled":false,"double_tap":false,"index":0)]
+}
+
+[android]
+gradle_build/use_gradle_build=true

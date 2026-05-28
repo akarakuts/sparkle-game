@@ -1,0 +1,64 @@
+# --- OS ---
+.DS_Store
+**/.DS_Store
+Thumbs.db
+*~
+
+# --- IDE / редакторы ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*.iml
+
+# --- Godot 4 ---
+.godot/
+# Импорты только для ресурсов вне res:// (например docs/) — в assets/ *.import коммитятся
+docs/**/*.import
+
+# --- Секреты и подпись (никогда в git) ---
+.godot/export_credentials.cfg
+**/keystore.properties
+**/*.jks
+**/*.keystore
+**/*.p12
+**/pepk-encryption-key.txt
+
+# --- Локальные инструменты ---
+.tools/
+
+# --- Сборки и экспорт ---
+.build/
+exports/
+*.apk
+*.aab
+*.idsig
+
+# --- Android / Gradle (шаблон Godot) ---
+android/build/
+android/libs/
+**/.gradle/
+local.properties
+.externalNativeBuild/
+.cxx/
+/captures/
+
+# --- Python (tools/) ---
+__pycache__/
+*.py[cod]
+.venv/
+.venv-*/
+
+# --- Логи и дампы ---
+*.log
+*.hprof
+
+# --- RuStore (доки, скриншоты витрины, скрипты — ключи в ~/Bars/rustore/sparkle-store/) ---
+docs/rustore/
+docs/store-screenshots/
+tools/*rustore*
+
+# --- Временные / локальные каталоги ---
+tmp/
+temp/
+.cache/
