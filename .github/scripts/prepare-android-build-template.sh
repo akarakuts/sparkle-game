@@ -10,7 +10,11 @@ TPL_ROOT="${HOME}/.local/share/godot/export_templates/${GODOT_FOLDER}"
 ANDROID_BUILD="$ROOT/android/build"
 ANDROID_SOURCE="$TPL_ROOT/android_source.zip"
 
-[[ -f "$ANDROID_SOURCE" ]] || { echo "Missing $ANDROID_SOURCE" >&2; exit 1; }
+if [[ ! -f "$ANDROID_SOURCE" ]]; then
+  echo "Missing $ANDROID_SOURCE — run install-godot.sh first" >&2
+  ls -la "$TPL_ROOT" 2>/dev/null || true
+  exit 1
+fi
 
 rm -rf "$ANDROID_BUILD"
 mkdir -p "$ANDROID_BUILD"

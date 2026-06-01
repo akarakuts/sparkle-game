@@ -19,10 +19,31 @@ fi
 
 godot --version
 
-if [[ ! -f "$TPL_ROOT/android_debug.apk" ]]; then
+if [[ ! -f "$TPL_ROOT/android_source.zip" ]]; then
   TPZ="Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz"
   wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/${TPZ}"
-  unzip -qo "$TPZ" -d "$TPL_ROOT"
+  TMP="$(mktemp -d)"
+  unzip -qo "$TPZ" -d "$TMP"
+  rm -f "$TPZ"
+  # TPZ may unpack flat or one level down — normalize into TPL_ROOT.
+  if [[ -f "$TMP/android_source.zip" ]]; then
+    cp -a "$TMP"/. "$TPL_ROOT"/
+  else
+    SRC="$(find "$TMP" -name android_source.zip -print -quit | xargs dirname)"
+    if [[ -z "${SRC:-}" || ! -f "$SRC/android_source.zip" ]]; then
+      echo "android_source.zip not found after extracting export templates" >&2
+      find "$TMP" -maxdepth 3 -type f | head -20 >&2
+      exit 1
+    fi
+    cp -a "$SRC"/. "$TPL_ROOT"/
+  fi
+  rm -rf "$TMP"
 fi
 
-echo "Export templates: $TPL_ROOT"
+if [[ ! -f "$TPL_ROOT/android_source.zip" ]]; then
+  echo "Missing $TPL_ROOT/android_source.zip after install" >&2
+  ls -la "$TPL_ROOT" >&2 || true
+  exit 1
+fi
+
+echo "Export templates OK: $TPL_ROOT (android_source.zip present)"
