@@ -41,6 +41,16 @@ Russian / Русский: [README.ru.md](README.ru.md)
 
 Local editor binary (optional): `.tools/Godot.app` in the project tree.
 
+## CI & automation
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| [CI](.github/workflows/ci.yml) | push / PR to `master`, manual | Godot headless `smoke_test` + `test_runner` |
+| [Security](.github/workflows/security.yml) | push / PR to `master`, weekly | OSV dependency scan |
+| [Release](.github/workflows/release.yml) | tag `v*` | Upload-keystore–signed **APK + AAB** + GitHub Release (requires secrets) |
+
+[Dependabot](.github/dependabot.yml) opens weekly PRs for GitHub Actions dependencies.
+
 ## Build & run
 
 ### Debug APK (emulator / device)
@@ -78,6 +88,45 @@ python3 tools/gen_minigame_ui_assets.py
 ```
 
 Presets and version are defined in `export_presets.cfg`. Do not commit `.godot/export_credentials.cfg` or keystores.
+
+For **store-ready** signed builds locally or via CI, see [Release signing (RuStore / GitHub Actions)](#release-signing-rustore--github-actions).
+
+## Release signing (RuStore / GitHub Actions)
+
+RuStore expects a **release build signed with your upload key** (AAB is typical). The same upload keystore as [Russian checkers](https://github.com/akarakuts/russiancheckers) can be used if you ship under one developer account.
+
+### 1. Upload keystore (once)
+
+Create or reuse `upload-keystore.jks` (see [RuStore PEPK / upload key](https://www.rustore.ru/help/developers/publishing-and-verifying-apps/app-publication/new-version-app/upload-aab)). Keep backups — without the keystore you cannot ship compatible updates.
+
+### 2. Local signed release builds
+
+1. Place `upload-keystore.jks` in the repo root (gitignored) or use keys from `~/Bars/rustore/sparkle-store/`.
+2. Copy [`keystore.properties.example`](keystore.properties.example) to **`keystore.properties`** and fill passwords, **or** run `~/Bars/rustore/sparkle-store/write-godot-export-credentials.sh` to write `.godot/export_credentials.cfg`.
+3. Install the Android build template in Godot (or unzip `android_source.zip` into `android/build/` as in `.github/scripts/prepare-android-build-template.sh`).
+4. Export:
+
+```bash
+godot --headless --export-release "Android Release AAB" .build/SparkleGame-release.aab
+godot --headless --export-release "Android Release APK" .build/SparkleGame-release.apk
+```
+
+### 3. GitHub Actions tag releases (`v*`)
+
+Configure these **repository secrets** (Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|--------|-------|
+| `RELEASE_KEYSTORE_BASE64` | Base64 of `upload-keystore.jks` (`base64 -i upload-keystore.jks \| tr -d '\n'` on macOS) |
+| `RELEASE_STORE_PASSWORD` | Keystore password |
+| `RELEASE_KEY_ALIAS` | Key alias (e.g. `upload`) |
+| `RELEASE_KEY_PASSWORD` | Key password |
+
+Push a tag, e.g. `git tag v1.3.0 && git push origin v1.3.0`. The [Release](.github/workflows/release.yml) workflow attaches **`sparkle-<tag>.apk`** and **`.aab`** to the GitHub Release. If any secret is missing, the workflow **fails** (no silent unsigned store builds).
+
+## GitHub Releases
+
+Tagged pushes (`v*`) publish signed **APK + AAB** from the Release workflow. RuStore upload assets are prepared separately under `~/Bars/rustore/sparkle-store/` (not in this repo).
 
 ## Project layout
 

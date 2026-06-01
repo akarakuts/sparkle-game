@@ -21,6 +21,16 @@ English: [README.md](README.md)
 - **Сохранения** — JSON в `user://`, три слота, миграция схемы (`SaveManager`), родительские ворота (задача + лимит экранного времени).
 - **Интерфейс** — PNG из `tools/gen_minigame_ui_assets.py`, фоны WOW, safe-area, эффекты `JuiceManager`.
 
+## CI и автоматизация
+
+| Workflow | Когда | Задача |
+|----------|-------|--------|
+| [CI](.github/workflows/ci.yml) | push / PR в `master` | Godot: `smoke_test`, `test_runner` |
+| [Security](.github/workflows/security.yml) | push / PR в `master`, по расписанию | OSV-сканирование |
+| [Release](.github/workflows/release.yml) | тег `v*` | Подписанные **APK + AAB** и GitHub Release (нужны secrets) |
+
+Подпись release и секреты GitHub — в [README.md](README.md#release-signing-rustore--github-actions) (как у [шашек](https://github.com/akarakuts/russiancheckers)).
+
 ## Требования и сборка
 
 Как в [README.md](README.md): Godot 4.6.3 с Android export templates, JDK 11+ для Gradle AAB.
@@ -51,6 +61,8 @@ python3 tools/gen_minigame_ui_assets.py
 ```
 
 Версия и пресеты — в `export_presets.cfg`. Не коммитить `.godot/export_credentials.cfg` и keystore.
+
+Тег `v*` на GitHub собирает `sparkle-<тег>.apk` и `.aab` (см. Release workflow). RuStore-выкладка — в `~/Bars/rustore/sparkle-store/` (вне репозитория).
 
 ## Структура проекта
 

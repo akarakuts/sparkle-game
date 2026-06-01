@@ -1,0 +1,102 @@
+# Push tag v*: OSV scan → signed release APK + AAB (Godot) → GitHub Release.
+# Signing uses upload keystore from GitHub Actions secrets (see README).
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.6.3"
+  GODOT_RELEASE: stable
+
+jobs:
+  osv-scan:
+    name: OSV (pre-release)
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.8
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    with:
+      fail-on-vuln: false
+      scan-args: |-
+        --allow-no-lockfiles
+        --recursive
+        ./
+
+  build-and-publish:
+    name: Build signed APK/AAB and publish GitHub Release
+    needs: osv-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Prepare upload keystore (from secrets)
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          ROOT: ${{ github.workspace }}
+          STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: bash .github/scripts/prepare-release-signing.sh
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Godot and export templates
+        run: bash .github/scripts/install-godot.sh
+
+      - name: Prepare Android build template
+        env:
+          GITHUB_WORKSPACE: ${{ github.workspace }}
+        run: bash .github/scripts/prepare-android-build-template.sh
+
+      - name: Export signed release AAB and APK
+        run: |
+          set -euo pipefail
+          mkdir -p .build
+          godot --headless --path . --export-release "Android Release AAB" ".build/SparkleGame-release.aab"
+          godot --headless --path . --export-release "Android Release APK" ".build/SparkleGame-release.apk"
+          ls -la .build/SparkleGame-release.*
+
+      - name: Stage artifacts for upload
+        id: art
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          APK_OUT="sparkle-${TAG}.apk"
+          AAB_OUT="sparkle-${TAG}.aab"
+          cp ".build/SparkleGame-release.apk" "$APK_OUT"
+          cp ".build/SparkleGame-release.aab" "$AAB_OUT"
+          echo "apk=$APK_OUT" >> "$GITHUB_OUTPUT"
+          echo "aab=$AAB_OUT" >> "$GITHUB_OUTPUT"
+          ls -la "$APK_OUT" "$AAB_OUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            ${{ steps.art.outputs.apk }}
+            ${{ steps.art.outputs.aab }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true

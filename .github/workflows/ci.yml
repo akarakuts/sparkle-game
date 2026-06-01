@@ -1,0 +1,38 @@
+# Godot smoke tests on every push / PR to master.
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.6.3"
+  GODOT_RELEASE: stable
+
+jobs:
+  godot-tests:
+    name: Godot headless tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Godot and export templates
+        run: bash .github/scripts/install-godot.sh
+
+      - name: Smoke test
+        run: godot --headless --path . -s tools/smoke_test.gd
+
+      - name: Test runner
+        run: godot --headless --path . -s tools/test_runner.gd

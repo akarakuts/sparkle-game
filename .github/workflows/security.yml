@@ -1,0 +1,28 @@
+# OSV dependency scan on pushes and PRs to master (weekly schedule).
+name: Security
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    - cron: "0 12 * * 1"
+
+jobs:
+  osv:
+    name: OSV dependency scan
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.8
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    with:
+      fail-on-vuln: false
+      scan-args: |-
+        --allow-no-lockfiles
+        --recursive
+        ./
