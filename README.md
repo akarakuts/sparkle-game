@@ -9,7 +9,7 @@ Russian / Русский: [README.ru.md](README.ru.md)
 | | |
 |---|---|
 | Package | `com.sparklegame.sparkle` |
-| Version | `1.2.0` (see `export_presets.cfg`) |
+| Version | `1.3.0` (see `export_presets.cfg`) |
 | Engine | Godot 4.6.3, GL compatibility renderer |
 | Orientation | Portrait 1080×1920 (scaled via `DisplayHelper`) |
 

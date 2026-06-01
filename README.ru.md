@@ -9,7 +9,7 @@ English: [README.md](README.md)
 | | |
 |---|---|
 | Пакет | `com.sparklegame.sparkle` |
-| Версия | `1.2.0` (`export_presets.cfg`) |
+| Версия | `1.3.0` (`export_presets.cfg`) |
 | Движок | Godot 4.6.3, рендер `gl_compatibility` |
 | Экран | Портрет 1080×1920, масштаб через `DisplayHelper` |
 
