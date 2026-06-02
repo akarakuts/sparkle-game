@@ -9,7 +9,7 @@ Russian / Русский: [README.ru.md](README.ru.md)
 | | |
 |---|---|
 | Package | `com.sparklegame.sparkle` |
-| Version | `1.3.0` (see `export_presets.cfg`) |
+| Version | `1.3.1` (see `export_presets.cfg`) |
 | Engine | Godot 4.6.3, GL compatibility renderer |
 | Orientation | Portrait 1080×1920 (scaled via `DisplayHelper`) |
 
@@ -122,7 +122,7 @@ Configure these **repository secrets** (Settings → Secrets and variables → A
 | `RELEASE_KEY_ALIAS` | Key alias (e.g. `upload`) |
 | `RELEASE_KEY_PASSWORD` | Key password |
 
-Push a tag, e.g. `git tag v1.3.0 && git push origin v1.3.0`. The [Release](.github/workflows/release.yml) workflow attaches **`sparkle-<tag>.apk`** and **`.aab`** to the GitHub Release. If any secret is missing, the workflow **fails** (no silent unsigned store builds).
+Push a tag, e.g. `git tag v1.3.1 && git push origin v1.3.1`. The [Release](.github/workflows/release.yml) workflow attaches **`sparkle-<tag>.apk`** and **`.aab`** to the GitHub Release. If any secret is missing, the workflow **fails** (no silent unsigned store builds).
 
 ## GitHub Releases
 
