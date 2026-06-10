@@ -37,6 +37,46 @@ static func clear_texture_cache() -> void:
 	_texture_cache.clear()
 
 
+const DIGIT_TEXTURES: Array[String] = [
+	"res://assets/graphics/ui/minigames/digits/0.png",
+	"res://assets/graphics/ui/minigames/digits/1.png",
+	"res://assets/graphics/ui/minigames/digits/2.png",
+	"res://assets/graphics/ui/minigames/digits/3.png",
+	"res://assets/graphics/ui/minigames/digits/4.png",
+	"res://assets/graphics/ui/minigames/digits/5.png",
+	"res://assets/graphics/ui/minigames/digits/6.png",
+	"res://assets/graphics/ui/minigames/digits/7.png",
+	"res://assets/graphics/ui/minigames/digits/8.png",
+	"res://assets/graphics/ui/minigames/digits/9.png",
+]
+const DIGIT_SLASH_TEX: String = "res://assets/graphics/ui/minigames/digits/slash.png"
+
+
+static func render_digit_row_default(
+	container: Control,
+	text: String,
+	digit_size: Vector2 = Vector2(44, 58),
+	advance: float = 38.0
+) -> void:
+	render_digit_row(container, text, DIGIT_TEXTURES, digit_size, advance)
+
+
+static func render_fraction_digits(container: Control, numerator: int, denominator: int) -> void:
+	if container == null:
+		return
+	for child in container.get_children():
+		child.queue_free()
+	var x := 0.0
+	for ch in str(numerator):
+		container.add_child(make_picture("N_" + ch, DIGIT_TEXTURES[int(ch)], Vector2(34, 52), Vector2(x, 0), 0))
+		x += 30.0
+	container.add_child(make_picture("Slash", DIGIT_SLASH_TEX, Vector2(24, 52), Vector2(x, 0), 0))
+	x += 22.0
+	for ch in str(denominator):
+		container.add_child(make_picture("D_" + ch, DIGIT_TEXTURES[int(ch)], Vector2(34, 52), Vector2(x, 0), 0))
+		x += 30.0
+
+
 ## Общий фон мини-игр: градиент + мерцание. Добавляет ноды в host и опускает их назад.
 static func build_minigame_background(
 	host: Control,

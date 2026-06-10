@@ -58,11 +58,8 @@ var _back_button: Button = null
 var _title_label: TextureRect = null
 var _items_container: Control = null
 var _bins_container: Control = null
-var _completion_overlay: ColorRect = null
-
-
 func _ready() -> void:
-	# difficulty присваивается из SceneManager уже после _ready, поэтому читаем напрямую.
+	SceneManager.apply_pending_minigame_context(self)
 	difficulty = SceneManager.get_pending_difficulty()
 	_items_per_color = clampi(difficulty + 1, 2, 4)
 	_configure_viewport()
@@ -71,7 +68,6 @@ func _ready() -> void:
 	_build_title()
 	_build_items()
 	_build_bins()
-	_build_completion_overlay()
 
 
 func _configure_viewport() -> void:
@@ -169,43 +165,11 @@ func _build_bins() -> void:
 		bin_bg.stretch_mode = TextureRect.STRETCH_SCALE
 		_bins_container.add_child(bin_bg)
 
-		# Drop zone для определения области сброса
-		# Используем Area2D для детекции области сброса
-		var drop_area = Area2D.new()
-		drop_area.name = "DropArea_" + str(idx)
-		drop_area.position = Vector2(bin_x + bin_width / 2, bin_y + bin_height / 2)
-
-		var collision = CollisionShape2D.new()
-		var rect_shape = RectangleShape2D.new()
-		rect_shape.size = Vector2(bin_width, bin_height)
-		collision.shape = rect_shape
-		drop_area.add_child(collision)
-
-		drop_area.set_meta("bin_idx", idx)
-		drop_area.set_meta("bin_color_idx", idx)
-		drop_area.set_meta("is_bin", true)
-		drop_area.monitorable = false
-		_bins_container.add_child(drop_area)
-
 		_bins.append({
 			"node": bin_bg,
 			"color_idx": idx,
-			"drop_area": drop_area,
 			"items_inside": []
 		})
-
-
-func _build_completion_overlay() -> void:
-	# Оверлей завершения (скрыт по умолчанию)
-	_completion_overlay = ColorRect.new()
-	_completion_overlay.name = "CompletionOverlay"
-	_completion_overlay.size = Vector2(1080, 1920)
-	_completion_overlay.position = Vector2.ZERO
-	_completion_overlay.color = Color(0, 0, 0, 0.0)
-	_completion_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_completion_overlay.z_index = 200
-	_completion_overlay.visible = false
-	add_child(_completion_overlay)
 
 
 # ── Drag & Drop ────────────────────────────────────────────────────
@@ -428,7 +392,7 @@ func _play_success_sound() -> void:
 
 
 func _on_completion_finished() -> void:
-	MinigameCompletion.emit_game_completed(self, world_id, game_id)
+	MinigameCompletion.emit_game_completed(self)
 
 
 func _on_back_pressed() -> void:

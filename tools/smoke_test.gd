@@ -2,7 +2,7 @@ extends SceneTree
 
 ## Headless smoke test: instantiate main scenes and exit (CI / local sanity).
 
-const SCENES := [
+const SCENES: Array[String] = [
 	"res://scenes/main/MainMenu.tscn",
 	"res://scenes/main/WorldMap.tscn",
 	"res://scenes/worlds/01_glow_forest/GlowForest.tscn",
@@ -19,6 +19,8 @@ const SCENES := [
 	"res://scenes/ui/Settings.tscn",
 	"res://scenes/ui/ParentGate.tscn",
 	"res://scenes/ui/StickerAlbum.tscn",
+	"res://scenes/ui/HUD.tscn",
+	"res://scenes/ui/DialogBox.tscn",
 ]
 
 func _initialize() -> void:

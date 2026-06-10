@@ -6,8 +6,6 @@ const SAVE_DIR: String = "user://"
 const SAVE_PREFIX: String = "save_"
 const SAVE_EXT: String = ".json"
 const SAVE_VERSION: int = 2
-const TOTAL_WORLDS: int = 7
-
 var _game_state: GameState = null
 
 
@@ -120,7 +118,7 @@ func load_game(slot: int = 0) -> bool:
 		minigame_progress = save_data["minigame_progress"]
 
 	# Применение.
-	_game_state.current_world = clampi(current_world, 0, TOTAL_WORLDS - 1)
+	_game_state.current_world = clampi(current_world, 0, GameConstants.TOTAL_WORLDS - 1)
 	_game_state.current_save_slot = slot
 	_game_state.collected_shards = shards
 	_game_state.world_states = states
@@ -153,7 +151,7 @@ func _on_game_reset() -> void:
 
 func _default_world_states() -> Dictionary:
 	var states: Dictionary = {}
-	for i in range(TOTAL_WORLDS):
+	for i in range(GameConstants.TOTAL_WORLDS):
 		states[i] = "open" if i == 0 else "locked"
 	return states
 
@@ -165,7 +163,7 @@ func _normalize_world_states(raw_value) -> Dictionary:
 	var raw: Dictionary = raw_value
 	for key in raw.keys():
 		var wid: int = int(key)
-		if wid < 0 or wid >= TOTAL_WORLDS:
+		if wid < 0 or wid >= GameConstants.TOTAL_WORLDS:
 			continue
 		var value: String = str(raw[key])
 		if value in ["open", "locked", "completed"]:
@@ -178,12 +176,12 @@ func _normalize_world_states(raw_value) -> Dictionary:
 
 func _normalize_shards(raw_value) -> Array:
 	var shards: Array = []
-	for i in range(TOTAL_WORLDS):
+	for i in range(GameConstants.TOTAL_WORLDS):
 		shards.append(false)
 	if typeof(raw_value) != TYPE_ARRAY:
 		return shards
 	var raw: Array = raw_value
-	for i in range(mini(raw.size(), TOTAL_WORLDS)):
+	for i in range(mini(raw.size(), GameConstants.TOTAL_WORLDS)):
 		shards[i] = bool(raw[i])
 	return shards
 

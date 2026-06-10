@@ -24,9 +24,11 @@ renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
 
 [autoload]
+GameConstants="*res://scripts/global/GameConstants.gd"
 GameState="*res://scripts/global/GameState.gd"
 MiniGameManager="*res://scripts/global/MiniGameManager.gd"
 SaveManager="*res://scripts/global/SaveManager.gd"
+ProgressService="*res://scripts/global/ProgressService.gd"
 AudioManager="*res://scripts/global/AudioManager.gd"
 SceneManager="*res://scripts/global/SceneManager.gd"
 DisplayHelper="*res://scripts/global/DisplayHelper.gd"

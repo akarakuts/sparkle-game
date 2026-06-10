@@ -9,7 +9,7 @@ English: [README.md](README.md)
 | | |
 |---|---|
 | Пакет | `com.sparklegame.sparkle` |
-| Версия | `1.3.1` (`export_presets.cfg`) |
+| Версия | `1.4.1` (`export_presets.cfg`) |
 | Движок | Godot 4.6.3, рендер `gl_compatibility` |
 | Экран | Портрет 1080×1920, масштаб через `DisplayHelper` |
 
@@ -78,6 +78,11 @@ python3 tools/gen_minigame_ui_assets.py
 ### Цикл игры
 
 Меню → карта → мир → мини-игры → осколок → открытие следующего мира → финал при 7/7.
+
+## Документация
+
+- [CHANGELOG.md](CHANGELOG.md) — история версий
+- [docs/PRIVACY.ru.md](docs/PRIVACY.ru.md) — политика конфиденциальности
 
 ## Проверки
 

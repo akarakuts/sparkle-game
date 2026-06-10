@@ -161,7 +161,7 @@ func _populate_stickers() -> void:
 	for child in _grid.get_children():
 		child.queue_free()
 
-	for world_id in range(7):
+	for world_id in range(GameConstants.TOTAL_WORLDS):
 		var games: Array = MiniGameManager.get_world_games(world_id)
 		for game_id in range(games.size()):
 			var cell := _make_sticker_cell(world_id, game_id, games[game_id].get("completed", false))

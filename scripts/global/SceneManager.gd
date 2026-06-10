@@ -1,19 +1,6 @@
 extends Node
 
-## SceneManager — autoload: fade transitions menu ↔ map ↔ worlds ↔ mini-games; shard on world clear.
-
-const MENU_SCENE: String = "res://scenes/main/MainMenu.tscn"
-const WORLD_MAP_SCENE: String = "res://scenes/main/WorldMap.tscn"
-
-const WORLD_SCENES: Dictionary = {
-	0: "res://scenes/worlds/01_glow_forest/GlowForest.tscn",
-	1: "res://scenes/worlds/02_ice_peaks/IcePeaks.tscn",
-	2: "res://scenes/worlds/03_cloud_gardens/CloudGardens.tscn",
-	3: "res://scenes/worlds/04_underwater/UnderwaterCity.tscn",
-	4: "res://scenes/worlds/05_echo_desert/EchoDesert.tscn",
-	5: "res://scenes/worlds/06_mechanical_grove/MechanicalGrove.tscn",
-	6: "res://scenes/worlds/07_dreamlands/Dreamlands.tscn"
-}
+## SceneManager — autoload: fade transitions menu ↔ map ↔ worlds ↔ mini-games.
 
 const DEFAULT_FADE_DURATION: float = 0.3
 
@@ -24,6 +11,7 @@ var _is_transitioning: bool = false
 var _pending_minigame_world: int = -1
 var _pending_minigame_game: int = -1
 var _pending_scene_path: String = ""
+var _queued_scene_path: String = ""
 # Мир, для которого нужно показать поздравление при следующей загрузке (момент сбора осколка).
 var _pending_world_celebration: int = -1
 
@@ -58,25 +46,25 @@ func goto_menu() -> void:
 	_pending_minigame_world = -1
 	_pending_minigame_game = -1
 	AudioManager.play_sfx("transition")
-	_fade_to_scene(MENU_SCENE)
+	_fade_to_scene(GameConstants.MENU_SCENE)
 
 
 func goto_world_map() -> void:
 	_pending_minigame_world = -1
 	_pending_minigame_game = -1
 	AudioManager.play_sfx("transition")
-	_fade_to_scene(WORLD_MAP_SCENE)
+	_fade_to_scene(GameConstants.WORLD_MAP_SCENE)
 
 
 func goto_world(world_id: int) -> void:
-	if not WORLD_SCENES.has(world_id):
+	if not GameConstants.WORLD_SCENES.has(world_id):
 		push_error("SceneManager: неизвестный мир " + str(world_id))
 		return
 	_pending_minigame_world = -1
 	_pending_minigame_game = -1
 	GameState.current_world = world_id
 	AudioManager.play_sfx("transition")
-	_fade_to_scene(WORLD_SCENES[world_id])
+	_fade_to_scene(GameConstants.WORLD_SCENES[world_id])
 
 
 func goto_minigame(world_id: int, game_id: int) -> void:
@@ -91,8 +79,15 @@ func goto_minigame(world_id: int, game_id: int) -> void:
 	_fade_to_scene(games[game_id]["scene_path"])
 
 
+func get_pending_minigame_world() -> int:
+	return _pending_minigame_world
+
+
+func get_pending_minigame_game() -> int:
+	return _pending_minigame_game
+
+
 ## Сложность текущей запускаемой мини-игры (1..5).
-## Сцены читают её в _ready, т.к. world_id/game_id присваиваются уже после _ready.
 func get_pending_difficulty() -> int:
 	if _pending_minigame_world < 0:
 		return 1
@@ -102,8 +97,22 @@ func get_pending_difficulty() -> int:
 	return 1
 
 
+## Пробрасывает world_id / game_id / difficulty в сцену мини-игры и подключает game_completed.
+func apply_pending_minigame_context(scene: Node) -> void:
+	if scene == null or _pending_minigame_world < 0:
+		return
+	scene.set("world_id", _pending_minigame_world)
+	scene.set("game_id", _pending_minigame_game)
+	if "difficulty" in scene:
+		scene.difficulty = get_pending_difficulty()
+	if scene.has_signal("game_completed"):
+		if not scene.game_completed.is_connected(_on_minigame_completed):
+			scene.game_completed.connect(_on_minigame_completed)
+
+
 func _fade_to_scene(scene_path: String, duration: float = DEFAULT_FADE_DURATION) -> void:
 	if _is_transitioning:
+		_queued_scene_path = scene_path
 		return
 
 	_setup_fade_overlay()
@@ -144,6 +153,8 @@ func _change_scene(scene_path: String) -> void:
 		_is_transitioning = false
 		return
 
+	# Контекст мини-игры задаём сразу — до _ready/deferred, иначе game_id остаётся 0.
+	apply_pending_minigame_context(get_tree().current_scene)
 	call_deferred("_configure_current_scene")
 
 
@@ -159,60 +170,34 @@ func _configure_current_scene() -> void:
 			DisplayHelper.fill_control(scene)
 
 	if _pending_minigame_world >= 0:
-		if "world_id" in scene:
-			scene.world_id = _pending_minigame_world
-		if "game_id" in scene:
-			scene.game_id = _pending_minigame_game
-		if "difficulty" in scene:
-			scene.difficulty = get_pending_difficulty()
-		if scene.has_signal("game_completed"):
-			if not scene.game_completed.is_connected(_on_minigame_completed):
-				scene.game_completed.connect(_on_minigame_completed)
+		apply_pending_minigame_context(scene)
 	elif scene is WorldBase:
 		scene.call_deferred("refresh_minigame_buttons")
 
 
-func _on_minigame_completed(world_id: int, game_id: int) -> void:
-	MiniGameManager.complete_minigame(world_id, game_id)
-	GameState.collect_sticker(world_id, game_id)
-	JuiceManager.celebrate_at(DisplayHelper.center())
-	JuiceManager.sparkle_burst(DisplayHelper.center())
-	AudioManager.play_sfx("success")
-	SaveManager.save_game(GameState.current_save_slot)
-
-	var got_shard: bool = false
-	if MiniGameManager.is_world_ready(world_id):
-		if GameState.collect_shard(world_id):
-			got_shard = true
-			AudioManager.play_sfx("shard")
-			JuiceManager.screen_flash(Color(0.5, 0.8, 1.0), 0.45, 0.4)
-		GameState.complete_world(world_id)
-		# Поздравление с завершением мира показываем один раз — при загрузке мира ниже.
-		_pending_world_celebration = world_id
-	if got_shard:
-		JuiceManager.confetti_at(DisplayHelper.center(), null, 48)
+func _on_minigame_completed(world_id: int, game_id: int, scene_path: String = "") -> void:
+	var outcome: Dictionary = ProgressService.handle_minigame_completed(world_id, game_id, scene_path)
+	if int(outcome.get("celebration_world", -1)) >= 0:
+		_pending_world_celebration = int(outcome["celebration_world"])
 
 	_pending_minigame_world = -1
 	_pending_minigame_game = -1
 	goto_world(world_id)
 
 
-## Прерывает подвисший переход (например, если завершение пришло во время фейда).
 func abort_transition() -> void:
 	if _tween != null and _tween.is_valid():
 		_tween.kill()
 	_is_transitioning = false
+	_queued_scene_path = ""
 
 
-## Маршрутизация завершения мини-игры, если сигнал game_completed не был подключён.
-## Идемпотентно: если завершение уже обработано через сигнал, ничего не делает.
-func notify_minigame_completed(world_id: int, game_id: int) -> void:
+func notify_minigame_completed(world_id: int, game_id: int, scene_path: String = "") -> void:
 	if _pending_minigame_world < 0:
 		return
-	_on_minigame_completed(world_id, game_id)
+	_on_minigame_completed(world_id, game_id, scene_path)
 
 
-## Возвращает true один раз — для мира, который только что был завершён.
 func consume_world_celebration(world_id: int) -> bool:
 	if _pending_world_celebration == world_id:
 		_pending_world_celebration = -1
@@ -223,3 +208,7 @@ func consume_world_celebration(world_id: int) -> bool:
 func _on_fade_complete() -> void:
 	_set_fade_alpha(0.0)
 	_is_transitioning = false
+	if not _queued_scene_path.is_empty():
+		var next_path: String = _queued_scene_path
+		_queued_scene_path = ""
+		call_deferred("_fade_to_scene", next_path)

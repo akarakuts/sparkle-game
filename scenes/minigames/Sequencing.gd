@@ -92,12 +92,11 @@ var _status_label: TextureRect = null
 var _level_digits: Control = null
 var _level_total_digits: Control = null
 var _buttons: Array = []       # массив словарей кнопок
-var _completion_overlay: ColorRect = null
 var _show_timer: Timer = null
 
 
 func _ready() -> void:
-	# difficulty присваивается из SceneManager уже после _ready, поэтому читаем напрямую.
+	SceneManager.apply_pending_minigame_context(self)
 	difficulty = SceneManager.get_pending_difficulty()
 	_levels_to_complete = clampi(difficulty + 1, 2, LEVEL_STEPS.size())
 	_configure_viewport()
@@ -107,7 +106,6 @@ func _ready() -> void:
 	_build_level_label()
 	_build_status_label()
 	_build_color_buttons()
-	_build_completion_overlay()
 	_start_level()
 
 
@@ -241,18 +239,6 @@ func _build_color_buttons() -> void:
 			"button": btn,
 			"color_idx": i
 		})
-
-
-func _build_completion_overlay() -> void:
-	_completion_overlay = ColorRect.new()
-	_completion_overlay.name = "CompletionOverlay"
-	_completion_overlay.size = Vector2(1080, 1920)
-	_completion_overlay.position = Vector2.ZERO
-	_completion_overlay.color = Color(0, 0, 0, 0.0)
-	_completion_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_completion_overlay.z_index = 200
-	_completion_overlay.visible = false
-	add_child(_completion_overlay)
 
 
 func _start_level() -> void:
@@ -427,7 +413,7 @@ func _play_error_sound() -> void:
 
 
 func _on_completion_finished() -> void:
-	MinigameCompletion.emit_game_completed(self, world_id, game_id)
+	MinigameCompletion.emit_game_completed(self)
 
 
 func _on_back_pressed() -> void:

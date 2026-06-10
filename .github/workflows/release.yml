@@ -24,7 +24,7 @@ jobs:
       security-events: write
       actions: read
     with:
-      fail-on-vuln: false
+      fail-on-vuln: true
       scan-args: |-
         --allow-no-lockfiles
         --recursive
@@ -41,6 +41,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Cache Godot export templates
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/godot/export_templates
+          key: godot-templates-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
+
+      - name: Install Godot and export templates
+        run: bash .github/scripts/install-godot.sh
+
+      - name: Smoke test
+        run: godot --headless --path . -s tools/smoke_test.gd
+
+      - name: Test runner
+        run: godot --headless --path . -s tools/test_runner.gd
 
       - name: Prepare upload keystore (from secrets)
         env:
@@ -62,9 +77,6 @@ jobs:
 
       - name: Android SDK
         uses: android-actions/setup-android@v4
-
-      - name: Install Godot and export templates
-        run: bash .github/scripts/install-godot.sh
 
       - name: Prepare Android build template
         env:

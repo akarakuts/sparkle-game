@@ -7,6 +7,9 @@ signal game_completed(world_id: int, game_id: int)
 # Идентификаторы (заполняются извне)
 var world_id: int = 0
 var game_id: int = 0
+var difficulty: int = 1
+
+var _min_strokes_for_done: int = 3
 
 # Конфигурация
 const CANVAS_SIZE: Vector2 = Vector2(940, 980)
@@ -64,6 +67,9 @@ var _active_touch_id: int = -1
 
 
 func _ready() -> void:
+	SceneManager.apply_pending_minigame_context(self)
+	difficulty = SceneManager.get_pending_difficulty()
+	_min_strokes_for_done = clampi(2 + difficulty, 3, 8)
 	_configure_viewport()
 	_build_background()
 	_build_back_button()
@@ -289,6 +295,10 @@ func _on_clear_pressed() -> void:
 func _on_done_pressed() -> void:
 	if _is_completed:
 		return
+	if _lines.size() < _min_strokes_for_done:
+		if _done_button:
+			JuiceManager.button_pop(_done_button)
+		return
 
 	_is_completed = true
 	_canvas_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -309,7 +319,7 @@ func _play_success_sound() -> void:
 
 
 func _on_completion_finished() -> void:
-	MinigameCompletion.emit_game_completed(self, world_id, game_id)
+	MinigameCompletion.emit_game_completed(self)
 
 
 func _on_back_pressed() -> void:

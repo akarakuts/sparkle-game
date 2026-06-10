@@ -85,20 +85,44 @@ static func present(
 		host.get_tree().create_timer(auto_delay_sec).timeout.connect(finish)
 
 
-static func emit_game_completed(host: Node, world_id: int, game_id: int) -> void:
+## Читает world_id/game_id с узла и SceneManager; сверяет с scene_file_path.
+static func resolve_launch_ids(host: Node) -> Vector2i:
+	if host == null:
+		return Vector2i.ZERO
+	var world_id: int = int(host.get("world_id"))
+	var game_id: int = int(host.get("game_id"))
+	var scene_manager := host.get_node_or_null("/root/SceneManager")
+	if scene_manager != null:
+		var pending_world: int = scene_manager.get_pending_minigame_world()
+		var pending_game: int = scene_manager.get_pending_minigame_game()
+		if pending_world >= 0:
+			world_id = pending_world
+		if pending_game >= 0:
+			game_id = pending_game
+	var scene_path: String = host.scene_file_path
+	game_id = MiniGameManager.resolve_game_id(world_id, game_id, scene_path)
+	return Vector2i(world_id, game_id)
+
+
+static func emit_game_completed(host: Node) -> void:
 	if host == null or not host.has_signal("game_completed"):
 		return
+
+	var ids := resolve_launch_ids(host)
+	var world_id: int = ids.x
+	var game_id: int = ids.y
+	var scene_path: String = host.scene_file_path
 
 	var scene_manager := host.get_node_or_null("/root/SceneManager")
 	if scene_manager != null:
 		scene_manager.abort_transition()
 
-	# Подключённый обработчик (если есть) выполнит маршрутизацию через сигнал.
+	var had_listeners: bool = not host.game_completed.get_connections().is_empty()
 	host.game_completed.emit(world_id, game_id)
 
-	# Фолбэк: если сигнал не был подключён, завершаем напрямую (идемпотентно).
-	if scene_manager != null:
-		scene_manager.notify_minigame_completed(world_id, game_id)
+	# Фолбэк только если обработчик ещё не был подключён.
+	if not had_listeners and scene_manager != null:
+		scene_manager.notify_minigame_completed(world_id, game_id, scene_path)
 
 
 static func _spawn_particles(pos: Vector2) -> CPUParticles2D:

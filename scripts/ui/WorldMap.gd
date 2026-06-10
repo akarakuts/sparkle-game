@@ -5,8 +5,6 @@ extends Control
 signal world_selected(world_id: int)
 signal back_pressed
 
-const TOTAL_WORLDS = 7
-const TOTAL_SHARDS = TOTAL_WORLDS
 const MiniGameArt := preload("res://scripts/ui/MiniGameArt.gd")
 const StickerAlbumScript := preload("res://scripts/ui/StickerAlbum.gd")
 const ISLAND_TEX: Array[Texture2D] = [
@@ -46,26 +44,11 @@ const MAP_WORLD_NAME_TEX := [
 const MAP_BADGE_OPEN_TEX := "res://assets/graphics/ui/minigames/worldmap/badge_open.png"
 const MAP_BADGE_DONE_TEX := "res://assets/graphics/ui/minigames/worldmap/badge_done.png"
 const MAP_BADGE_LOCK_TEX := "res://assets/graphics/ui/minigames/worldmap/badge_lock.png"
-const DIGIT_TEXTURES := [
-	"res://assets/graphics/ui/minigames/digits/0.png",
-	"res://assets/graphics/ui/minigames/digits/1.png",
-	"res://assets/graphics/ui/minigames/digits/2.png",
-	"res://assets/graphics/ui/minigames/digits/3.png",
-	"res://assets/graphics/ui/minigames/digits/4.png",
-	"res://assets/graphics/ui/minigames/digits/5.png",
-	"res://assets/graphics/ui/minigames/digits/6.png",
-	"res://assets/graphics/ui/minigames/digits/7.png",
-	"res://assets/graphics/ui/minigames/digits/8.png",
-	"res://assets/graphics/ui/minigames/digits/9.png",
-]
-const DIGIT_SLASH_TEX := "res://assets/graphics/ui/minigames/digits/slash.png"
-
 enum WorldState { LOCKED, AVAILABLE, COMPLETED }
 
 @onready var background = $Background
 @onready var connection_lines = $ConnectionLines
 @onready var crystal_icon = $CrystalContainer/CrystalIcon
-@onready var shard_counter = $ShardCounter
 @onready var _hint_label: Label = $MapHint
 @onready var _title_label: Label = $MapTitle
 
@@ -76,9 +59,7 @@ var shake_tween: Tween
 var _crystal_tween: Tween = null
 var _title_art: TextureRect = null
 var _hint_art: TextureRect = null
-var _shard_label_art: TextureRect = null
 var _crystal_digits: Control = null
-var _shard_digits: Control = null
 var _safe_top: float = 0.0
 var _safe_left: float = 0.0
 var _safe_right: float = 0.0
@@ -97,7 +78,6 @@ func _ready() -> void:
 	_style_static_ui()
 	_load_game_state()
 	_update_world_display()
-	_update_shard_counter()
 	_update_crystal_glow()
 	_connect_signals()
 	call_deferred("_show_first_visit_hint")
@@ -123,29 +103,12 @@ func _replace_static_labels() -> void:
 		_crystal_digits.size = Vector2(148, 60)
 		_crystal_digits.z_index = 15
 		crystal_parent.add_child(_crystal_digits)
-	if shard_counter:
-		shard_counter.visible = false
 	var back_btn: Button = $BackButton
 	back_btn.text = ""
 	MiniGameArt.replace_picture(back_btn, "BackArt", MAP_BACK_TEX, back_btn.size)
 	var album_btn: Button = $AlbumButton
 	album_btn.text = ""
 	MiniGameArt.replace_picture(album_btn, "AlbumArt", MAP_ALBUM_TEX, album_btn.size)
-
-
-func _render_digits(container: Control, text: String) -> void:
-	if container == null:
-		return
-	for child in container.get_children():
-		child.queue_free()
-	var x := 0.0
-	for i in range(text.length()):
-		var ch := text.substr(i, 1)
-		var tex_path: String = DIGIT_SLASH_TEX if ch == "/" else String(DIGIT_TEXTURES[int(ch)])
-		var width := 24.0 if ch == "/" else 34.0
-		var digit := MiniGameArt.make_picture("Digit_" + str(i), tex_path, Vector2(width, 52), Vector2(x, 0), 0)
-		container.add_child(digit)
-		x += width - (4.0 if ch == "/" else 2.0)
 
 
 func _set_hint_texture(texture_path: String, size: Vector2) -> void:
@@ -232,7 +195,7 @@ func _layout_world_islands(header_bottom: float) -> void:
 
 	# Зигзаг: центр → лево/право → лево/право → центр → центр (без наложений)
 	var layout: Array[Vector2] = []
-	layout.resize(TOTAL_WORLDS)
+	layout.resize(GameConstants.TOTAL_WORLDS)
 	var y := top_y
 	layout[0] = Vector2(center_x, y)
 	y += island_sz.y + gap_y
@@ -249,7 +212,7 @@ func _layout_world_islands(header_bottom: float) -> void:
 	var content_bottom := layout[6].y + island_sz.y
 	if content_bottom > bottom_limit and content_bottom > top_y:
 		var scale := (bottom_limit - top_y) / (content_bottom - top_y)
-		for i in range(TOTAL_WORLDS):
+		for i in range(GameConstants.TOTAL_WORLDS):
 			layout[i].y = top_y + (layout[i].y - top_y) * scale
 
 	for i in range(world_buttons.size()):
@@ -264,7 +227,7 @@ func _island_center(idx: int) -> Vector2:
 
 
 func _update_connection_lines() -> void:
-	if connection_lines == null or world_buttons.size() < TOTAL_WORLDS:
+	if connection_lines == null or world_buttons.size() < GameConstants.TOTAL_WORLDS:
 		return
 	var links: Dictionary = {
 		"Line1_2": [0, 1],
@@ -298,7 +261,7 @@ func _layout_hint(map_w: float, map_h: float) -> void:
 
 func _collect_world_buttons() -> void:
 	world_buttons.clear()
-	for i in range(TOTAL_WORLDS):
+	for i in range(GameConstants.TOTAL_WORLDS):
 		var btn: Button = get_node("World" + str(i + 1))
 		btn.z_index = 15
 		world_buttons.append(btn)
@@ -352,9 +315,6 @@ func _apply_island_style(btn: Button, color: Color) -> void:
 func _style_static_ui() -> void:
 	_hide_center_crystal()
 
-	if shard_counter:
-		shard_counter.z_index = 20
-
 	var back_btn: Button = $BackButton
 	back_btn.z_index = 20
 	var empty_style := StyleBoxEmpty.new()
@@ -391,10 +351,14 @@ func _on_album_pressed() -> void:
 	StickerAlbumScript.open_over(self)
 
 
+func _get_collected_shards() -> int:
+	return GameState.get_shard_count()
+
+
 func _update_crystal_glow() -> void:
 	var count: int = _get_collected_shards()
-	var ratio: float = float(count) / float(TOTAL_SHARDS)
-	_render_digits(_crystal_digits, str(count) + "/" + str(TOTAL_SHARDS))
+	var ratio: float = float(count) / float(GameConstants.TOTAL_WORLDS)
+	MiniGameArt.render_fraction_digits(_crystal_digits, count, GameConstants.TOTAL_WORLDS)
 	if _crystal_digits:
 		_crystal_digits.scale = Vector2.ONE * (1.0 + ratio * 0.08)
 
@@ -420,7 +384,7 @@ func _load_game_state() -> void:
 			_:
 				world_states[world_id + 1] = WorldState.LOCKED
 
-	for i in range(2, TOTAL_WORLDS + 1):
+	for i in range(2, GameConstants.TOTAL_WORLDS + 1):
 		if world_states.get(i - 1, WorldState.LOCKED) == WorldState.COMPLETED:
 			if world_states.get(i, WorldState.LOCKED) == WorldState.LOCKED:
 				world_states[i] = WorldState.AVAILABLE
@@ -469,17 +433,6 @@ func _add_highlight_animation(btn: Button) -> void:
 	tw.tween_property(btn, "scale", Vector2(1.0, 1.0), 0.85)
 
 
-func _update_shard_counter() -> void:
-	if _shard_digits == null:
-		return
-	var collected := _get_collected_shards()
-	_render_digits(_shard_digits, str(collected) + "/" + str(TOTAL_SHARDS))
-
-
-func _get_collected_shards() -> int:
-	return GameState.get_shard_count()
-
-
 func _on_back_pressed() -> void:
 	JuiceManager.button_pop($BackButton)
 	emit_signal("back_pressed")
@@ -514,7 +467,6 @@ func _show_locked_feedback(btn: Button) -> void:
 func refresh() -> void:
 	_load_game_state()
 	_update_world_display()
-	_update_shard_counter()
 	_update_crystal_glow()
 
 

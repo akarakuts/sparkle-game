@@ -26,7 +26,6 @@ var world_states: Dictionary = {
 var settings: Dictionary = {
 	"sound": true,
 	"music": true,
-	"lang": "ru",
 	"sound_volume": 80.0,
 	"music_volume": 60.0
 }
@@ -36,16 +35,13 @@ var play_time: float = 0.0
 ## Финал «Кристалл Дружбы восстановлён» уже показан (чтобы не повторять).
 var crystal_finale_shown: bool = false
 
-const TOTAL_WORLDS: int = 7
-
-
 func _ready() -> void:
 	apply_audio_settings()
 
 
 ## Все осколки собраны — кристалл восстановлен.
 func is_crystal_complete() -> bool:
-	return get_shard_count() >= TOTAL_WORLDS
+	return get_shard_count() >= GameConstants.TOTAL_WORLDS
 
 
 func _process(delta: float) -> void:
@@ -68,7 +64,6 @@ func reset_game() -> void:
 	settings = {
 		"sound": true,
 		"music": true,
-		"lang": "ru",
 		"sound_volume": 80.0,
 		"music_volume": 60.0
 	}
@@ -96,14 +91,17 @@ func is_world_unlocked(world_id: int) -> bool:
 	return world_states[world_id] in ["open", "completed"]
 
 
-func complete_world(world_id: int) -> void:
+func complete_world(world_id: int) -> bool:
 	if not world_states.has(world_id):
-		return
+		return false
+	if world_states[world_id] == "completed":
+		return false
 	world_states[world_id] = "completed"
 	var next_world: int = world_id + 1
 	if world_states.has(next_world) and world_states[next_world] == "locked":
 		world_states[next_world] = "open"
 	world_completed.emit(world_id)
+	return true
 
 
 func get_shard_count() -> int:

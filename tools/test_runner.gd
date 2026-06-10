@@ -2,8 +2,7 @@ extends SceneTree
 
 ## Headless regression runner: scene load, save migration, MiniGameArt helpers.
 
-const MiniGameArt := preload("res://scripts/ui/MiniGameArt.gd")
-const SCENES := [
+const SCENES: Array[String] = [
 	"res://scenes/main/MainMenu.tscn",
 	"res://scenes/main/WorldMap.tscn",
 	"res://scenes/worlds/01_glow_forest/GlowForest.tscn",
@@ -31,7 +30,7 @@ func _initialize() -> void:
 	var audio_manager := root.get_node_or_null("AudioManager")
 	if audio_manager and audio_manager.has_method("release_test_resources"):
 		audio_manager.release_test_resources()
-	MiniGameArt.clear_texture_cache()
+	(load("res://scripts/ui/MiniGameArt.gd") as GDScript).clear_texture_cache()
 	await process_frame
 	await process_frame
 	await process_frame
@@ -53,6 +52,10 @@ func _run_all() -> void:
 	await _test_drawing_line_logic()
 	await _test_minigame_completion_signals_emit()
 	await _test_minigame_completion_routes_back_to_world()
+	await _test_game_state_complete_world_idempotent()
+	await _test_save_migration_v1()
+	await _test_all_worlds_minigame_slots()
+	await _test_world_scene_button_counts()
 
 
 func _assert(condition: bool, message: String) -> void:
@@ -97,7 +100,7 @@ func _test_minigame_scene_paths_load() -> void:
 	_assert(minigame_manager != null, "autoload MiniGameManager не найден")
 	if minigame_manager == null:
 		return
-	for world_id in range(7):
+	for world_id in range(GameConstants.TOTAL_WORLDS):
 		var games: Array = minigame_manager.get_world_games(world_id)
 		_assert(not games.is_empty(), "мир " + str(world_id) + " не содержит мини-игр")
 		for game_id in range(games.size()):
@@ -167,12 +170,16 @@ func _test_drawing_line_logic() -> void:
 
 
 func _test_minigame_completion_signals_emit() -> void:
+	var minigame_manager := root.get_node_or_null("MiniGameManager")
 	for scene_path in [
 		"res://scenes/minigames/Puzzle.tscn",
 		"res://scenes/minigames/Memory.tscn",
 		"res://scenes/minigames/Sequencing.tscn",
 		"res://scenes/minigames/Drawing.tscn",
 	]:
+		var expected_game_id: int = 0
+		if minigame_manager != null:
+			expected_game_id = minigame_manager.resolve_game_id(0, 0, scene_path)
 		var scene := _instantiate_scene(scene_path)
 		if scene == null:
 			continue
@@ -187,7 +194,10 @@ func _test_minigame_completion_signals_emit() -> void:
 		scene._on_completion_finished()
 		_assert(completed.size() == 1, scene_path + " не испускает game_completed после завершения")
 		if completed.size() == 1:
-			_assert(completed[0] == [0, 0], scene_path + " испускает неправильные world_id/game_id")
+			_assert(
+				completed[0] == [0, expected_game_id],
+				scene_path + " испускает неправильные world_id/game_id: " + str(completed[0])
+			)
 		await _free_scene(scene)
 
 
@@ -229,3 +239,171 @@ func _test_minigame_completion_routes_back_to_world() -> void:
 	game_state.collected_shards = saved_shards
 	game_state.world_states = saved_world_states
 	game_state.collected_stickers = saved_stickers
+
+
+func _test_all_worlds_minigame_slots() -> void:
+	var scene_manager := root.get_node_or_null("SceneManager")
+	var minigame_manager := root.get_node_or_null("MiniGameManager")
+	_assert(scene_manager != null, "autoload SceneManager не найден")
+	_assert(minigame_manager != null, "autoload MiniGameManager не найден")
+	if scene_manager == null or minigame_manager == null:
+		return
+
+	var saved_progress: Dictionary = minigame_manager.get_save_data()
+
+	for world_id in range(GameConstants.TOTAL_WORLDS):
+		var games: Array = minigame_manager.get_world_games(world_id)
+		_assert(not games.is_empty(), "мир " + str(world_id) + " без мини-игр")
+		for game_id in range(games.size()):
+			var game: Dictionary = games[game_id]
+			var scene_path: String = str(game.get("scene_path", ""))
+			var game_name: String = str(game.get("name", ""))
+
+			var resolved: int = minigame_manager.resolve_game_id(world_id, game_id, scene_path)
+			_assert(
+				resolved == game_id,
+				"мир %d слот %d (%s): resolve_game_id → %d" % [world_id, game_id, game_name, resolved]
+			)
+
+			scene_manager._pending_minigame_world = world_id
+			scene_manager._pending_minigame_game = game_id
+			var scene := _instantiate_scene(scene_path)
+			if scene == null:
+				continue
+			root.add_child(scene)
+			await process_frame
+			_assert(
+				int(scene.get("world_id")) == world_id,
+				"мир %d слот %d: world_id на сцене = %s" % [world_id, game_id, str(scene.get("world_id"))]
+			)
+			_assert(
+				int(scene.get("game_id")) == game_id,
+				"мир %d слот %d (%s): game_id на сцене = %s" % [world_id, game_id, game_name, str(scene.get("game_id"))]
+			)
+
+			minigame_manager.reset_progress()
+			scene._on_completion_finished()
+			await process_frame
+			var after: Array = minigame_manager.get_world_games(world_id)
+			for i in range(after.size()):
+				var done: bool = after[i].get("completed", false)
+				if i == game_id:
+					_assert(done, "мир %d слот %d (%s) должен быть пройден" % [world_id, game_id, game_name])
+				else:
+					_assert(not done, "мир %d слот %d не должен отмечаться при прохождении слота %d" % [world_id, i, game_id])
+
+			scene_manager._pending_minigame_world = -1
+			scene_manager._pending_minigame_game = -1
+			await _free_scene(scene)
+
+	# Дубли типов: мир 4 слот 4 (вторая «Последовательность»), мир 5 слот 4 (вторая «Сортировка»).
+	for case in [
+		{"world": 4, "slot": 4, "path": "res://scenes/minigames/Sequencing.tscn"},
+		{"world": 5, "slot": 4, "path": "res://scenes/minigames/Puzzle.tscn"},
+	]:
+		var world_id: int = int(case["world"])
+		var game_id: int = int(case["slot"])
+		scene_manager._pending_minigame_world = world_id
+		scene_manager._pending_minigame_game = game_id
+		minigame_manager.reset_progress()
+		var dup_scene := _instantiate_scene(str(case["path"]))
+		if dup_scene == null:
+			continue
+		root.add_child(dup_scene)
+		await process_frame
+		dup_scene.game_id = 0
+		dup_scene._on_completion_finished()
+		await process_frame
+		var dup_games: Array = minigame_manager.get_world_games(world_id)
+		_assert(
+			dup_games[game_id].get("completed", false),
+			"мир %d дубль слот %d должен отмечаться при pending=%d" % [world_id, game_id, game_id]
+		)
+		_assert(
+			not dup_games[0].get("completed", false),
+			"мир %d слот 0 не должен отмечаться при прохождении дубля слота %d" % [world_id, game_id]
+		)
+		scene_manager._pending_minigame_world = -1
+		scene_manager._pending_minigame_game = -1
+		await _free_scene(dup_scene)
+
+	minigame_manager.load_save_data(saved_progress)
+
+
+func _test_world_scene_button_counts() -> void:
+	const EXPECTED_BUTTONS := {0: 4, 1: 4, 2: 4, 3: 3, 4: 5, 5: 5, 6: 1}
+	var minigame_manager := root.get_node_or_null("MiniGameManager")
+	if minigame_manager == null:
+		return
+
+	for world_id in range(GameConstants.TOTAL_WORLDS):
+		var games: Array = minigame_manager.get_world_games(world_id)
+		var expected: int = int(EXPECTED_BUTTONS.get(world_id, games.size()))
+		_assert(
+			games.size() == expected,
+			"мир %d: в конфиге %d мини-игр, ожидалось %d кнопок" % [world_id, games.size(), expected]
+		)
+
+		var world_path: String = str(GameConstants.WORLD_SCENES.get(world_id, ""))
+		if world_path.is_empty():
+			continue
+		var world_scene := _instantiate_scene(world_path)
+		if world_scene == null:
+			continue
+		root.add_child(world_scene)
+		await process_frame
+		var btn_count := 0
+		for node in world_scene.find_children("MiniGame_*", "Button", true, false):
+			btn_count += 1
+		_assert(
+			btn_count == expected,
+			"мир %d (%s): на сцене %d кнопок мини-игр, ожидалось %d" % [world_id, world_path, btn_count, expected]
+		)
+		await _free_scene(world_scene)
+
+
+func _test_game_state_complete_world_idempotent() -> void:
+	var game_state := root.get_node_or_null("GameState")
+	_assert(game_state != null, "autoload GameState не найден")
+	if game_state == null:
+		return
+	var saved_states: Dictionary = game_state.world_states.duplicate(true)
+	game_state.world_states[0] = "open"
+	_assert(game_state.complete_world(0), "complete_world(0) должен вернуть true при первом вызове")
+	_assert(not game_state.complete_world(0), "повторный complete_world(0) должен вернуть false")
+	_assert(game_state.world_states.get(1, "locked") == "open", "complete_world должен открыть следующий мир")
+	game_state.world_states = saved_states
+
+
+func _test_save_migration_v1() -> void:
+	var save_manager := root.get_node_or_null("SaveManager")
+	var game_state := root.get_node_or_null("GameState")
+	_assert(save_manager != null, "autoload SaveManager не найден")
+	_assert(game_state != null, "autoload GameState не найден")
+	if save_manager == null or game_state == null:
+		return
+	var slot := 99
+	var test_path := "user://save_%d.json" % slot
+	if FileAccess.file_exists(test_path):
+		DirAccess.remove_absolute(test_path)
+	var legacy := {
+		"save_version": 1,
+		"current_world": 0,
+		"collected_shards": [true, false],
+		"world_states": {"0": "completed", "1": "open"},
+		"settings": {"sound": true, "music": true},
+		"play_time": 12.5,
+		"minigame_progress": {},
+	}
+	var file := FileAccess.open(test_path, FileAccess.WRITE)
+	_assert(file != null, "не удалось записать тестовый сейв v1")
+	if file == null:
+		return
+	file.store_string(JSON.stringify(legacy))
+	file.close()
+	_assert(save_manager.load_game(slot), "миграция сейва v1 должна загружаться")
+	_assert(game_state.collected_shards.size() == GameConstants.TOTAL_WORLDS, "миграция v1: размер collected_shards")
+	_assert(game_state.collected_shards[0], "миграция v1: первый осколок")
+	_assert(not game_state.collected_shards[1], "миграция v1: второй осколок")
+	_assert(game_state.collected_stickers is Array, "миграция v1: collected_stickers — массив")
+	DirAccess.remove_absolute(test_path)

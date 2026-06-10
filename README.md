@@ -9,7 +9,7 @@ Russian / Русский: [README.ru.md](README.ru.md)
 | | |
 |---|---|
 | Package | `com.sparklegame.sparkle` |
-| Version | `1.3.1` (see `export_presets.cfg`) |
+| Version | `1.4.1` (see `export_presets.cfg`) |
 | Engine | Godot 4.6.3, GL compatibility renderer |
 | Orientation | Portrait 1080×1920 (scaled via `DisplayHelper`) |
 
@@ -157,6 +157,11 @@ Tagged pushes (`v*`) publish signed **APK + AAB** from the Release workflow. RuS
 4. Seven shards → **crystal finale** on the world map
 
 ## Testing
+
+## Documentation
+
+- [CHANGELOG.md](CHANGELOG.md) — release history
+- [docs/PRIVACY.ru.md](docs/PRIVACY.ru.md) — privacy policy (Russian)
 
 - `tools/smoke_test.gd` — quick headless sanity check
 - `tools/test_runner.gd` — broader scripted checks (save migration, routing)

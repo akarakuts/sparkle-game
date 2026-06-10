@@ -21,10 +21,12 @@ const MiniGameArt := preload("res://scripts/ui/MiniGameArt.gd")
 @onready var save_slot3 = $GatePanel/SaveSlot3
 @onready var reset_game_button = $GatePanel/ResetGameButton
 
-const CORRECT_ANSWER = 5
 const MAX_SCREEN_TIME_MINUTES = 60.0
 
 var is_authenticated: bool = false
+var _correct_answer: int = 0
+var _challenge_a: int = 0
+var _challenge_b: int = 0
 var screen_time_elapsed: float = 0.0
 var screen_time_tween: Tween
 var _title_art: Control = null
@@ -38,6 +40,7 @@ func _ready():
 	DisplayHelper.fill_control(self)
 	for btn in [submit_button, save_slot1, save_slot2, save_slot3, reset_game_button]:
 		DisplayHelper.make_button_clickable(btn)
+	_generate_challenge()
 	_replace_labels_with_art()
 	_connect_signals()
 	_setup_close_controls()
@@ -186,10 +189,19 @@ func _replace_labels_with_art() -> void:
 	)
 
 
+func _generate_challenge() -> void:
+	_challenge_a = randi_range(2, 12)
+	_challenge_b = randi_range(1, 9)
+	_correct_answer = _challenge_a + _challenge_b
+	if challenge_label:
+		challenge_label.text = "Сколько будет %d + %d?" % [_challenge_a, _challenge_b]
+
+
 func _set_challenge_message(text: String) -> void:
 	challenge_label.text = text
 	if _challenge_art:
 		MiniGameArt.set_text_art(_challenge_art, text)
+
 
 func _connect_signals():
 	submit_button.pressed.connect(_on_submit_pressed)
@@ -263,7 +275,7 @@ func _on_submit_pressed():
 		return
 
 	var answer = text.to_int()
-	if answer == CORRECT_ANSWER:
+	if answer == _correct_answer:
 		_on_authenticated()
 	else:
 		_wrong_answer_feedback()
@@ -280,7 +292,9 @@ func _wrong_answer_feedback():
 	_shake_element(answer_input)
 	answer_input.text = ""
 	_update_input_art()
-	_set_challenge_message("Неверно! Попробуйте ещё раз.")
+	_generate_challenge()
+	if _challenge_art:
+		MiniGameArt.set_text_art(_challenge_art, challenge_label.text)
 
 func _shake_element(element: Control):
 	if screen_time_tween and screen_time_tween.is_valid():

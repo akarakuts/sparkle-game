@@ -9,8 +9,8 @@ var _is_drawing: bool = false
 var _last_draw_pos: Vector2
 var _sticker_buttons: Array = []
 
+const StrokeCanvas := preload("res://scripts/minigames/StrokeCanvas.gd")
 const MAX_STROKES: int = 64 # Защита от OOM на слабых устройствах.
-const MIN_POINT_DIST: float = 4.0
 var _current_stroke: Line2D = null
 var _strokes: Array[Line2D] = []
 
@@ -180,15 +180,7 @@ func _on_canvas_input(event: InputEvent) -> void:
 
 
 func _begin_stroke(pos: Vector2) -> void:
-	_current_stroke = Line2D.new()
-	_current_stroke.name = "Stroke"
-	_current_stroke.width = _brush_size
-	_current_stroke.default_color = _current_color
-	_current_stroke.joint_mode = Line2D.LINE_JOINT_ROUND
-	_current_stroke.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	_current_stroke.end_cap_mode = Line2D.LINE_CAP_ROUND
-	_current_stroke.add_point(pos)
-	_drawing_canvas.add_child(_current_stroke)
+	_current_stroke = StrokeCanvas.begin_stroke(_drawing_canvas, _current_color, _brush_size, pos)
 	_last_draw_pos = pos
 	_strokes.append(_current_stroke)
 	# Удаляем самые старые штрихи, чтобы не плодить узлы бесконечно.
@@ -201,10 +193,9 @@ func _begin_stroke(pos: Vector2) -> void:
 func _extend_stroke(pos: Vector2) -> void:
 	if _current_stroke == null or not is_instance_valid(_current_stroke):
 		return
-	if pos.distance_to(_last_draw_pos) < MIN_POINT_DIST:
-		return
-	_current_stroke.add_point(pos)
-	_last_draw_pos = pos
+	StrokeCanvas.extend_stroke(_current_stroke, pos)
+	if _current_stroke.get_point_count() > 0:
+		_last_draw_pos = _current_stroke.get_point_position(_current_stroke.get_point_count() - 1)
 
 func _on_palette_color_pressed(event: InputEvent, index: int) -> void:
 	if event is InputEventScreenTouch and event.pressed:

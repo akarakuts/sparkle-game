@@ -67,9 +67,46 @@ func get_world_games(world_id: int) -> Array:
 	return []
 
 
-func complete_minigame(world_id: int, game_id: int) -> void:
+## Возвращает индекс слота; сверяет scene_path, при дублях — первый непройденный слот.
+func resolve_game_id(world_id: int, game_id: int, scene_path: String = "") -> int:
+	if not _minigame_data.has(world_id):
+		return game_id
+	var games: Array = _minigame_data[world_id]
+	if game_id >= 0 and game_id < games.size():
+		var expected: String = str(games[game_id].get("scene_path", ""))
+		if scene_path == "" or expected == scene_path:
+			return game_id
+	if scene_path == "":
+		return game_id
+
+	var matching: Array[int] = []
+	for i in range(games.size()):
+		if str(games[i].get("scene_path", "")) == scene_path:
+			matching.append(i)
+	if matching.is_empty():
+		push_warning(
+			"MiniGameManager: нет слота world=%d path=%s (game_id=%d)"
+			% [world_id, scene_path, game_id]
+		)
+		return game_id
+	if matching.size() == 1:
+		return matching[0]
+	for i in matching:
+		if not games[i].get("completed", false):
+			return i
+	return matching[matching.size() - 1]
+
+
+func count_button_slots(world_id: int) -> int:
+	if not _minigame_data.has(world_id):
+		return 0
+	return _minigame_data[world_id].size()
+
+
+func complete_minigame(world_id: int, game_id: int, scene_path: String = "") -> void:
 	if not _minigame_data.has(world_id):
 		return
+	game_id = resolve_game_id(world_id, game_id, scene_path)
 	var games: Array = _minigame_data[world_id]
 	if game_id < 0 or game_id >= games.size():
 		return

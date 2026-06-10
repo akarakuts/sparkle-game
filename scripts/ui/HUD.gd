@@ -7,18 +7,6 @@ const HUD_SHARD_ICON_TEX := "res://assets/graphics/ui/minigames/world/shard_icon
 const HUD_PAUSE_TEX := "res://assets/graphics/ui/minigames/world/pause_button.png"
 const HUD_HINT_TEX := "res://assets/graphics/ui/minigames/world/hint_tap.png"
 const HUD_PLUS_ONE_TEX := "res://assets/graphics/ui/minigames/world/plus_one.png"
-const DIGIT_TEXTURES := [
-	"res://assets/graphics/ui/minigames/digits/0.png",
-	"res://assets/graphics/ui/minigames/digits/1.png",
-	"res://assets/graphics/ui/minigames/digits/2.png",
-	"res://assets/graphics/ui/minigames/digits/3.png",
-	"res://assets/graphics/ui/minigames/digits/4.png",
-	"res://assets/graphics/ui/minigames/digits/5.png",
-	"res://assets/graphics/ui/minigames/digits/6.png",
-	"res://assets/graphics/ui/minigames/digits/7.png",
-	"res://assets/graphics/ui/minigames/digits/8.png",
-	"res://assets/graphics/ui/minigames/digits/9.png",
-]
 
 
 signal pause_pressed
@@ -97,7 +85,7 @@ func _render_digits(count: int) -> void:
 	var digits := str(count)
 	var x := 0.0
 	for i in range(digits.length()):
-		var tex := MiniGameArt.make_picture("Digit_" + str(i), DIGIT_TEXTURES[int(digits.substr(i, 1))], Vector2(34, 52), Vector2(x, 0), 0)
+		var tex := MiniGameArt.make_picture("Digit_" + str(i), MiniGameArt.DIGIT_TEXTURES[int(digits.substr(i, 1))], Vector2(34, 52), Vector2(x, 0), 0)
 		_digit_container.add_child(tex)
 		x += 30.0
 

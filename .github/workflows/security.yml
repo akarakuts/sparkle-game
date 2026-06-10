@@ -21,7 +21,7 @@ jobs:
       security-events: write
       actions: read
     with:
-      fail-on-vuln: false
+      fail-on-vuln: true
       scan-args: |-
         --allow-no-lockfiles
         --recursive
