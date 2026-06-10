@@ -115,8 +115,8 @@ func _test_main_menu_play_signal_connected_once() -> void:
 		return
 	root.add_child(scene)
 	await process_frame
-	var play_button := scene.get_node_or_null("CenterContainer/VBox/PlayButton") as Button
-	_assert(play_button != null, "MainMenu PlayButton отсутствует или не Button")
+	var play_button := scene.get_node_or_null("CenterContainer/VBox/PlayButton") as BaseButton
+	_assert(play_button != null, "MainMenu PlayButton отсутствует или не BaseButton")
 	if play_button != null:
 		var play_connections := 0
 		for connection in play_button.pressed.get_connections():

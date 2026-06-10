@@ -37,6 +37,9 @@ jobs:
       - name: Install Godot and export templates
         run: bash .github/scripts/install-godot.sh
 
+      - name: Import project assets
+        run: godot --headless --path . --import
+
       - name: Smoke test
         run: godot --headless --path . -s tools/smoke_test.gd
 
