@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.2 — 2026-06-10
+
+### CI
+- Импорт ресурсов Godot перед headless-тестами в GitHub Actions.
+- Тест `MainMenu`: `PlayButton` проверяется как `BaseButton` (`TextureButton`).
+
 ## 1.4.1 — 2026-06-10
 
 ### Исправления
